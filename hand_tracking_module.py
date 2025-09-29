@@ -69,6 +69,24 @@ class HandDetector:
                         cv2.FONT_HERSHEY_PLAIN, 2, (0, 255, 0), 2)
 
         return hand_label
+        
+    def fingers_up(self, hand):
+        lm_list = hand["lm_list"]
+        hand_label = hand["hand"] 
+        fingers = []
+
+        # Thumb
+        if hand_label == "Left":
+            fingers.append(1 if lm_list[4][1] > lm_list[3][1] else 0)
+        else:  # Right
+            fingers.append(1 if lm_list[4][1] < lm_list[3][1] else 0)
+
+        # 4 Fingers
+        tip_ids = [8, 12, 16, 20]
+        for tip in tip_ids:
+            fingers.append(1 if lm_list[tip][2] < lm_list[tip - 2][2] else 0)
+
+        return fingers
 
 
 import numpy as np  # make sure this is at the top
@@ -89,9 +107,14 @@ def main():
         img = cv2.flip(img, 1)
 
         img = detector.find_hands(img, draw_landmarks=show_landmarks)
-        lm_list = detector.find_position(img,
+        all_hands = detector.find_position(img,
                                          draw_labels=show_labels,
                                          draw_bounding_boxes=show_bboxes)
+        
+        if len(all_hands) > 0:
+            hand = all_hands[0]
+            fingers = detector.fingers_up(hand)
+            print(fingers)
 
         # FPS calculation
         c_time = time.time()
